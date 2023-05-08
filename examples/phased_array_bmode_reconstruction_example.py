@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     # simulation settings
     DATA_CAST = 'single'
-    RUN_SIMULATION = False
+    RUN_SIMULATION = True
 
     # =========================================================================
     # DEFINE THE K-WAVE GRID
@@ -91,7 +91,9 @@ if __name__ == '__main__':
     number_scan_lines = 96
 
     print("Fetching phantom data...")
-    phantom_data_path = 'phantom_data.mat'
+    # phantom_data_path = 'phantom_data.mat'
+    phantom_data_path = 'ct_phantom_data.mat'
+    
     PHANTOM_DATA_GDRIVE_ID = '1ZfSdJPe8nufZHz0U9IuwHR4chaOGAWO4'
     download_from_gdrive_if_does_not_exist(PHANTOM_DATA_GDRIVE_ID, phantom_data_path)
 
@@ -146,7 +148,7 @@ if __name__ == '__main__':
         # not_transducer.steering_angle = 0  # steering angle [degrees]
         steering_angles = np.linspace(-45, 45, number_scan_lines)
         # not_transducer.steering_angle = 0  # steering angle [degrees]
-        not_transducer.steering_angle = steering_angles[scan_line_index]  # steering angle [degrees]
+        not_transducer.steering_angle = steering_angles[scan_line_index - 1]  # steering angle [degrees]
         print(f'not_transducer.steering_angle = {not_transducer.steering_angle}')
 
         # apodization
@@ -169,7 +171,7 @@ if __name__ == '__main__':
         # update the command line status
 
         # load the current section of the medium
-        medium_position = medium_position + transducer.element_width * int(number_scan_lines/2)
+        medium_position = transducer.element_width * int(number_scan_lines/2)
         medium.sound_speed = sound_speed_map[:, medium_position:medium_position + Ny, :]
         medium.density = density_map[:, medium_position:medium_position + Ny, :]
 
