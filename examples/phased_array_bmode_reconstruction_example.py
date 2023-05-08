@@ -83,23 +83,49 @@ if __name__ == '__main__':
     # impedance (the source is assigned to the particle velocity)
     input_signal = (source_strength / (c0 * rho0)) * input_signal
 
+    # =========================================================================
+    # DEFINE THE ULTRASOUND TRANSDUCER
+    # =========================================================================
+    print("Setting up the transducer configuration...")
+
+    # physical properties of the transducer
+    transducer = dotdict()
+    transducer.number_elements = 32  # total number of transducer elements
+    transducer.element_width = 2  # width of each element [grid points/voxels]
+    transducer.element_length = 24  # length of each element [grid points/voxels]
+    transducer.element_spacing = 0  # spacing (kerf  width) between the elements [grid points/voxels]
+    transducer.radius = float('inf')  # radius of curvature of the transducer [m]
+
+    # calculate the width of the transducer in grid points
+    transducer_width = transducer.number_elements * transducer.element_width + (
+                transducer.number_elements - 1) * transducer.element_spacing
+
+    # use this to position the transducer in the middle of the computational grid
+    transducer.position = np.round([1, Ny / 2 - transducer_width / 2, Nz / 2 - transducer.element_length / 2])
+
+    # properties used to derive the beamforming delays
+    not_transducer = dotdict()
+    not_transducer.sound_speed = c0  # sound speed [m/s]
+    not_transducer.focus_distance = 20e-3  # focus distance [m]
+    not_transducer.elevation_focus_distance = 19e-3  # focus distance in the elevation plane [m]
+    not_transducer.steering_angle = 0  # steering angle [degrees]
+
+    # apodization
+    not_transducer.transmit_apodization = 'Hanning'
+    not_transducer.receive_apodization = 'Rectangular'
+
+    # define the transducer elements that are currently active
+    not_transducer.active_elements = np.ones((transducer.number_elements, 1))
+
+    # append input signal used to drive the transducer
+    not_transducer.input_signal = input_signal
+
+    # create the transducer using the defined settings
+    transducer = kWaveTransducerSimple(kgrid, **transducer)
+    not_transducer = NotATransducer(transducer, kgrid, **not_transducer)
 
     # =========================================================================
-    # DEFINE THE MEDIUM PROPERTIES
-    # =========================================================================
-    # define a large image size to move across
-    number_scan_lines = 96
-
-    print("Fetching phantom data...")
-    # phantom_data_path = 'phantom_data.mat'
-    phantom_data_path = 'ct_phantom_data.mat'
     
-    PHANTOM_DATA_GDRIVE_ID = '1ZfSdJPe8nufZHz0U9IuwHR4chaOGAWO4'
-    download_from_gdrive_if_does_not_exist(PHANTOM_DATA_GDRIVE_ID, phantom_data_path)
-
-    phantom = scipy.io.loadmat(phantom_data_path)
-    sound_speed_map = phantom['sound_speed_map']
-    density_map = phantom['density_map']
 
     # =========================================================================
     # RUN THE SIMULATION
@@ -116,67 +142,31 @@ if __name__ == '__main__':
     print('[INFO] - Starting simulation ? Enter to proceed...')
     input()
 
+    number_scan_lines = 96
+
     # loop through the scan lines
     for scan_line_index in range(1, number_scan_lines + 1):
 
-
         # =========================================================================
-        # DEFINE THE ULTRASOUND TRANSDUCER
+        # DEFINE THE MEDIUM PROPERTIES
         # =========================================================================
-        print("Setting up the transducer configuration...")
 
-        # physical properties of the transducer
-        transducer = dotdict()
-        transducer.number_elements = 32  # total number of transducer elements
-        transducer.element_width = 2  # width of each element [grid points/voxels]
-        transducer.element_length = 24  # length of each element [grid points/voxels]
-        transducer.element_spacing = 0  # spacing (kerf  width) between the elements [grid points/voxels]
-        transducer.radius = float('inf')  # radius of curvature of the transducer [m]
+        print("Fetching phantom data...")
+        # phantom_data_path = 'phantom_data.mat'
+        phantom_data_path = f'ct_phantom_data_{scan_line_index}.mat'
+        print(f'phantom_data_path = {phantom_data_path}')
 
-        # calculate the width of the transducer in grid points
-        transducer_width = transducer.number_elements * transducer.element_width + (
-                    transducer.number_elements - 1) * transducer.element_spacing
+        phantom = scipy.io.loadmat(phantom_data_path)
+        sound_speed_map = phantom['sound_speed_map']
+        density_map = phantom['density_map']
 
-        # use this to position the transducer in the middle of the computational grid
-        transducer.position = np.round([1, Ny / 2 - transducer_width / 2, Nz / 2 - transducer.element_length / 2])
-
-        # properties used to derive the beamforming delays
-        not_transducer = dotdict()
-        not_transducer.sound_speed = c0  # sound speed [m/s]
-        not_transducer.focus_distance = 20e-3  # focus distance [m]
-        not_transducer.elevation_focus_distance = 19e-3  # focus distance in the elevation plane [m]
-        # not_transducer.steering_angle = 0  # steering angle [degrees]
-        steering_angles = np.linspace(-45, 45, number_scan_lines)
-        # not_transducer.steering_angle = 0  # steering angle [degrees]
-        not_transducer.steering_angle = steering_angles[scan_line_index - 1]  # steering angle [degrees]
-        print(f'not_transducer.steering_angle = {not_transducer.steering_angle}')
-
-        # apodization
-        not_transducer.transmit_apodization = 'Hanning'
-        not_transducer.receive_apodization = 'Rectangular'
-
-        # define the transducer elements that are currently active
-        not_transducer.active_elements = np.ones((transducer.number_elements, 1))
-
-        # append input signal used to drive the transducer
-        not_transducer.input_signal = input_signal
-
-        # create the transducer using the defined settings
-        transducer = kWaveTransducerSimple(kgrid, **transducer)
-        not_transducer = NotATransducer(transducer, kgrid, **not_transducer)
-
-        # =========================================================================
 
         # for scan_line_index in range(1, 10):
         # update the command line status
 
         # load the current section of the medium
-        medium_position = transducer.element_width * int(number_scan_lines/2)
-        medium.sound_speed = sound_speed_map[:, medium_position:medium_position + Ny, :]
-        medium.density = density_map[:, medium_position:medium_position + Ny, :]
-
-        # update medium position
-        # medium_position = medium_position + transducer.element_width
+        medium.sound_speed = sound_speed_map
+        medium.density = density_map
 
 
         # set the input settings

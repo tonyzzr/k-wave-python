@@ -130,6 +130,11 @@ def beamform(channel_data: ChannelData) -> None:
     plt.savefig(os.path.join(os.getcwd(), filename))
     print(f"Plot saved to {os.path.join(os.getcwd(), filename)}")
 
+    import pickle
+
+    with open('beamformed_data', 'wb') as f:
+        pickle(beamformed_data, f)
+
     pass
 
 
