@@ -133,7 +133,7 @@ def beamform(channel_data: ChannelData) -> None:
     import pickle
 
     with open('beamformed_data', 'wb') as f:
-        pickle(beamformed_data, f)
+        pickle.dump(beamformed_data, f)
 
     pass
 
