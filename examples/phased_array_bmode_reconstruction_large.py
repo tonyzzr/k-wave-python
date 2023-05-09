@@ -217,6 +217,8 @@ if __name__ == '__main__':
     focal_depth = 20e-3  # [m]
     channel_data = build_channel_data(simulation_data, kgrid, not_transducer,
                                       sampling_frequency, prf, focal_depth)
-
+    import pickle
+    with open('channel_data', 'wb') as f:
+        pickle.dump(channel_data, f)
     print("Beamforming channel data and reconstructing the image...")
     beamform(channel_data)
