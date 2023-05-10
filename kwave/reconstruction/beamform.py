@@ -17,7 +17,11 @@ from .shifted_transform import ShiftedTransform
 from .tools import make_time_vector, get_t0, get_origin_array, apodize
 
 
-def beamform(channel_data: ChannelData) -> None:
+def beamform(channel_data: ChannelData,
+             f_number = 1.2,
+             num_px_z = 256,
+             imaging_depth = 40e-3,
+            ) -> None:
     """
 
     Args:
@@ -26,9 +30,6 @@ def beamform(channel_data: ChannelData) -> None:
     Returns:
 
     """
-    f_number = 1.2
-    num_px_z = 256
-    imaging_depth = 40e-3
     # apodization_window = 'boxcar'
     apodization_window = "none"
     number_samples = np.size(channel_data.data, axis=-1)

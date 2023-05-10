@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
         print("Fetching phantom data...")
         # phantom_data_path = 'phantom_data.mat'
-        phantom_data_path = f'ct_phantom_data_{scan_line_index}.mat'
+        phantom_data_path = f'/content/k-wave-python/examples/phased_array_data_large/ct_phantom_data_large{scan_line_index}.mat'
         print(f'phantom_data_path = {phantom_data_path}')
 
         phantom = scipy.io.loadmat(phantom_data_path)
